@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react";
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [hoveredBrand, setHoveredBrand] = useState(null);
-  const [muted, setMuted] = useState(() => {
+  const [playing, setPlaying] = useState(() => {
     if (typeof window === "undefined") return false;
-    return JSON.parse(localStorage.getItem("homeAudioMuted") ?? "false");
+    return JSON.parse(localStorage.getItem("homeAudioPlaying") ?? "false");
   });
   const audioRef = useRef(null);
   const audioSrc = "/ElevenLabs_Military_jet_fighter_engine_roar,_F-15_overhead_pass,_sustained_turbine_sound,_afterburner_trail,_wa.mp3";
@@ -45,18 +45,19 @@ export default function Home() {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    audioRef.current.muted = muted;
-    // Avoid preloading large audio until user unmutes
-    audioRef.current.preload = muted ? "none" : "auto";
-    localStorage.setItem("homeAudioMuted", JSON.stringify(muted));
-    if (!muted) {
+    audioRef.current.preload = playing ? "auto" : "none";
+    localStorage.setItem("homeAudioPlaying", JSON.stringify(playing));
+
+    if (playing) {
       audioRef.current
         .play()
         .catch(() => {
-          // Autoplay may be blocked by the browser; user can unmute manually.
+          // Autoplay may be blocked until the user interacts with the page.
         });
+    } else {
+      audioRef.current.pause();
     }
-  }, [muted]);
+  }, [playing]);
 
   const hovered = brands.find((b) => b.id === hoveredBrand);
 
@@ -90,11 +91,11 @@ export default function Home() {
         <div className="pt-32 pb-16 px-8 lg:px-20 relative">
           <div className="flex justify-end mb-6">
             <button
-              onClick={() => setMuted((prev) => !prev)}
+              onClick={() => setPlaying((prev) => !prev)}
               className="rounded-full border border-white/20 bg-black/50 px-4 py-2 text-xs uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
               style={{ backdropFilter: "blur(10px)" }}
             >
-              {muted ? "Unmute" : "Mute"}
+              {playing ? "Pause Audio" : "Play Audio"}
             </button>
           </div>
           <div
@@ -258,18 +259,13 @@ export default function Home() {
           <span className="font-condensed text-xs tracking-widest text-white/20 uppercase">
             © 2025 Fighter Jet Showcase — Six-jet Multimedia Mini Project
           </span>
-          <span className="font-condensed text-xs tracking-widest text-white/20 uppercase">
-            IT3 Evaluation
-          </span>
         </div>
       </div>
       <audio
         ref={audioRef}
         src={audioSrc}
         loop
-        autoPlay
-        preload="none"
-        muted={muted}
+        preload={playing ? "auto" : "none"}
       />
     </div>
   );
